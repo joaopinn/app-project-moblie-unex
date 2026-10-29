@@ -5,6 +5,7 @@ import {
   Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 // Valores compartilhados evitam cores diferentes para o mesmo papel visual.
 const colors = {
@@ -127,6 +128,8 @@ export function HomeScreen() {
   const explain = (title: string) => setNotice({ title, description: 'Este acesso faz parte do protótipo. A integração será adicionada quando esta funcionalidade for desenvolvida.' });
   const goToServices = () => scrollRef.current?.scrollTo({ y: servicesY.current, animated: true });
 
+  const router = useRouter();
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <View style={styles.shell}>
@@ -194,6 +197,7 @@ export function HomeScreen() {
             if (index === 0) scrollRef.current?.scrollTo({ y: 0, animated: true });
             else if (index === 1) goToServices();
             else if (index === 2) scrollRef.current?.scrollTo({ y: agendaY.current, animated: true });
+            else if (index === 4) router.push('/profile');
             else explain(item.label);
           }} style={styles.navItem}>
             <View style={[styles.navIcon, index === 0 && styles.activeNavIcon]}><Icon name={item.icon} size={25} color={index === 0 ? colors.navy : '#9699a3'} /></View>
