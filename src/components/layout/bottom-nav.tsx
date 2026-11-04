@@ -4,30 +4,41 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon, type IconName } from "@/components/ui/nexa-icon";
 import { colors } from "@/constants/nexa-theme";
 
-export const navigationItems: { label: string; icon: IconName }[] = [
-  { label: "Início", icon: "home" },
-  { label: "Serviços", icon: "grid" },
-  { label: "Agenda", icon: "calendar" },
+// Nome do arquivo de rota dentro de src/app/(tabs)/. Itens sem rota ainda não
+// têm tela implementada (ex.: Mensagens).
+export type TabRoute = "index" | "servicos" | "agenda" | "perfil";
+
+export type NavigationItem = { label: string; icon: IconName; route?: TabRoute };
+
+export const navigationItems: NavigationItem[] = [
+  { label: "Início", icon: "home", route: "index" },
+  { label: "Serviços", icon: "grid", route: "servicos" },
+  { label: "Agenda", icon: "calendar", route: "agenda" },
   { label: "Mensagens", icon: "mail" },
-  { label: "Perfil", icon: "user" },
+  { label: "Perfil", icon: "user", route: "perfil" },
 ];
 
-type Props = { activeIndex: number; onSelect: (index: number) => void };
+type Props = {
+  /** Nome da rota focada no navegador de abas. */
+  activeRoute: string;
+  onSelect: (item: NavigationItem) => void;
+};
 
-// Cada tela decide o que acontece ao tocar (onSelect); a barra só desenha e avisa.
-export function BottomNav({ activeIndex, onSelect }: Props) {
+// Componente puramente visual: quem decide o que acontece ao tocar é o layout
+// de abas (src/app/(tabs)/_layout.tsx). Assim nenhuma tela duplica a barra.
+export function BottomNav({ activeRoute, onSelect }: Props) {
   return (
     <SafeAreaView edges={["bottom"]} style={styles.bottomBar}>
-      <View style={styles.navigation}>
-        {navigationItems.map((item, index) => {
-          const active = index === activeIndex;
+      <View style={styles.navigation} accessibilityRole="tablist">
+        {navigationItems.map((item) => {
+          const active = item.route === activeRoute;
           return (
             <Pressable
               key={item.label}
-              accessibilityRole="button"
+              accessibilityRole="tab"
               accessibilityLabel={item.label}
               accessibilityState={{ selected: active }}
-              onPress={() => onSelect(index)}
+              onPress={() => onSelect(item)}
               style={styles.navItem}
             >
               <View style={[styles.navIcon, active && styles.activeNavIcon]}>

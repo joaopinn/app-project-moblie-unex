@@ -1,19 +1,28 @@
 import Feather from "@expo/vector-icons/Feather";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-
+import { router, useScrollToTop } from "expo-router";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppHeader } from "@/components/layout/app-header";
-import { BottomNav } from "@/components/layout/bottom-nav";
 
 import { services, type Service } from "@/data/services";
 import { openServiceLink } from "@/utils/open-service-link";
 import { ServiceCard } from "../services/service-card";
 
-import { useRef, useState, type ComponentProps, type PropsWithChildren, } from "react";
+import {
+  useRef,
+  useState,
+  type ComponentProps,
+  type PropsWithChildren,
+} from "react";
 
 const colors = {
   ink: "#171a2c",
@@ -289,7 +298,9 @@ export function HomeScreen() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const servicesY = useRef(0);
-  const agendaY = useRef(0);
+
+  // Tocar em "Início" com a Home já aberta rola o conteúdo de volta ao topo.
+  useScrollToTop(scrollRef);
 
   const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
 
@@ -309,18 +320,9 @@ export function HomeScreen() {
 
   const goToServices = () =>
     scrollRef.current?.scrollTo({ y: servicesY.current, animated: true });
-  const openServices = () => router.replace("/servicos");
-
-  const onNavigate = (index: number) => {
-    if (index === 0) scrollRef.current?.scrollTo({ y: 0, animated: true });
-    else if (index === 1) openServices();
-    else if (index === 2)
-      scrollRef.current?.scrollTo({ y: agendaY.current, animated: true });
-    else
-      explain(["Início", "Serviços", "Agenda", "Mensagens", "Perfil"][index]);
-  };
-
-  const router = useRouter();
+  // navigate (e não push): troca para a aba existente em vez de empilhar telas.
+  const openServices = () => router.navigate("/servicos");
+  const openAgenda = () => router.navigate("/agenda");
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
@@ -367,10 +369,7 @@ export function HomeScreen() {
                     key={service.id || service.title}
                     style={styles.cardContainer}
                   >
-                    <ServiceCard
-                      service={service}
-                      onPress={openServiceLink}
-                    />
+                    <ServiceCard service={service} onPress={openServiceLink} />
                   </View>
                 ))}
               </View>
@@ -404,53 +403,47 @@ export function HomeScreen() {
             </View>
           </Section>
 
-          <View
-            onLayout={(event) => {
-              agendaY.current = event.nativeEvent.layout.y;
-            }}
+          <Section
+            title="Próximos compromissos"
+            subtitle="Aulas, eventos e entregas em destaque."
+            action="Abrir agenda"
+            onAction={openAgenda}
           >
-            <Section
-              title="Próximos compromissos"
-              subtitle="Aulas, eventos e entregas em destaque."
-              action="Abrir agenda"
-              onAction={() => explain("Agenda")}
-            >
-              {appointments.map((item, index) => (
-                <Pressable
-                  accessibilityRole="button"
-                  key={item.title}
-                  onPress={() =>
-                    setNotice({
-                      title: item.title,
-                      description: `${item.day} de setembro · ${item.detail}. Dados demonstrativos do layout.`,
-                    })
-                  }
-                  style={({ pressed }) => [
-                    styles.appointment,
-                    index > 0 && styles.separator,
-                    pressed && styles.pressed,
+            {appointments.map((item, index) => (
+              <Pressable
+                accessibilityRole="button"
+                key={item.title}
+                onPress={() =>
+                  setNotice({
+                    title: item.title,
+                    description: `${item.day} de setembro · ${item.detail}. Dados demonstrativos do layout.`,
+                  })
+                }
+                style={({ pressed }) => [
+                  styles.appointment,
+                  index > 0 && styles.separator,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View style={styles.dateBox}>
+                  <Text style={styles.dateDay}>{item.day}</Text>
+                  <Text style={styles.dateMonth}>SET</Text>
+                </View>
+                <View style={styles.headingCopy}>
+                  <Text style={styles.cardTitle}>{item.title}</Text>
+                  <Text style={styles.cardDescription}>{item.detail}</Text>
+                </View>
+                <Text
+                  style={[
+                    styles.eventBadge,
+                    { backgroundColor: item.background, color: item.tint },
                   ]}
                 >
-                  <View style={styles.dateBox}>
-                    <Text style={styles.dateDay}>{item.day}</Text>
-                    <Text style={styles.dateMonth}>SET</Text>
-                  </View>
-                  <View style={styles.headingCopy}>
-                    <Text style={styles.cardTitle}>{item.title}</Text>
-                    <Text style={styles.cardDescription}>{item.detail}</Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.eventBadge,
-                      { backgroundColor: item.background, color: item.tint },
-                    ]}
-                  >
-                    {item.tag}
-                  </Text>
-                </Pressable>
-              ))}
-            </Section>
-          </View>
+                  {item.tag}
+                </Text>
+              </Pressable>
+            ))}
+          </Section>
 
           <StudentCard
             onDetails={() =>
@@ -493,20 +486,7 @@ export function HomeScreen() {
             </View>
           </Section>
         </ScrollView>
-
-        {/* Fora do ScrollView: a barra permanece visível enquanto o conteúdo rola. */}
-        <SafeAreaView edges={['bottom']} style={styles.bottomBar}>
-          <View style={styles.navigation}>{navigation.map((item, index) => <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label} accessibilityState={{ selected: index === 0 }} onPress={() => {
-            if (index === 0) scrollRef.current?.scrollTo({ y: 0, animated: true });
-            else if (index === 1) goToServices();
-            else if (index === 2) scrollRef.current?.scrollTo({ y: agendaY.current, animated: true });
-            else if (index === 4) router.push('/profile');
-            else explain(item.label);
-          }} style={styles.navItem}>
-            <View style={[styles.navIcon, index === 0 && styles.activeNavIcon]}><Icon name={item.icon} size={25} color={index === 0 ? colors.navy : '#9699a3'} /></View>
-            <Text style={[styles.navLabel, index === 0 && styles.activeNavLabel]}>{item.label}</Text>
-          </Pressable>)}</View>
-        </SafeAreaView>
+        {/* A barra inferior agora é renderizada pelo layout src/app/(tabs)/_layout.tsx. */}
       </View>
 
       <Modal

@@ -1,10 +1,8 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/layout/app-header';
-import { BottomNav, navigationItems } from '@/components/layout/bottom-nav';
 import { CategoryFilter } from '@/components/services/category-filter';
 import { ServiceCard } from '@/components/services/service-card';
 import { colors } from '@/constants/nexa-theme';
@@ -25,11 +23,6 @@ export function ServicesScreen() {
     (filter === 'Todos' || service.category === filter) &&
     normalize(`${service.title} ${service.description}`).includes(q),
   );
-
-  const onNavigate = (index: number) => {
-    if (index === 0) router.replace('/');
-    else if (index !== 1) Alert.alert(navigationItems[index].label, 'Esta tela ainda será desenvolvida.');
-  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -56,8 +49,7 @@ export function ServicesScreen() {
             <Text accessibilityLiveRegion="polite" style={styles.empty}>Nenhum serviço encontrado.</Text>
           ) : null}
         </ScrollView>
-
-        <BottomNav activeIndex={1} onSelect={onNavigate} />
+        {/* A barra inferior agora é renderizada pelo layout src/app/(tabs)/_layout.tsx. */}
       </View>
     </SafeAreaView>
   );
