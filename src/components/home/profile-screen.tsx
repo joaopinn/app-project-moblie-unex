@@ -11,10 +11,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 
 type IconName = ComponentProps<typeof Feather>['name'];
-type NavigationLabel = 'Início' | 'Serviços' | 'Agenda' | 'Mensagens' | 'Perfil';
 type ProfileAction =
   | 'Portal acadêmico'
   | 'Documentos'
@@ -24,8 +22,6 @@ type ProfileAction =
 type Notice = { title: string; description: string };
 
 type ProfileScreenProps = {
-  /** Conecte ao Expo Router ou ao sistema de navegação usado pelo aplicativo. */
-  onNavigate?: (destination: NavigationLabel) => void;
   /** Opcional: permite abrir a tela real de cada item do perfil. */
   onOpenAction?: (action: ProfileAction) => void;
 };
@@ -40,14 +36,6 @@ const colors = {
   white: '#ffffff',
   background: '#fbfbfc',
 };
-
-const navigation: { label: NavigationLabel; icon: IconName }[] = [
-  { label: 'Início', icon: 'home' },
-  { label: 'Serviços', icon: 'grid' },
-  { label: 'Agenda', icon: 'calendar' },
-  { label: 'Mensagens', icon: 'mail' },
-  { label: 'Perfil', icon: 'user' },
-];
 
 const profileGroups: {
   heading: string;
@@ -107,44 +95,9 @@ function Icon({
   return <Feather name={name} size={size} color={color} />;
 }
 
-export function ProfileScreen({
-  onNavigate,
-  onOpenAction,
-}: ProfileScreenProps = {}) {
+export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
   const [query, setQuery] = useState('');
   const [notice, setNotice] = useState<Notice | null>(null);
-
-  const router = useRouter();
-
-    const navigateToScreen = (label: string) => {
-    switch (label) {
-        case 'Início':
-        router.push('/');
-        break;
-
-        case 'Serviços':
-        setNotice({
-            title: label,
-            description: 'Esta funcionalidade ainda está em desenvolvimento.',
-        });
-
-        case 'Perfil':
-        break;  
-
-        case 'Agenda':
-        setNotice({
-            title: label,
-            description: 'Esta funcionalidade ainda está em desenvolvimento.',
-        });
-
-        case 'Mensagens':
-        setNotice({
-            title: label,
-            description: 'Esta funcionalidade ainda está em desenvolvimento.',
-        });
-        break;
-    }
-    };
 
   const visibleGroups = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
@@ -182,21 +135,6 @@ export function ProfileScreen({
     };
 
     setNotice({ title: action, description: descriptions[action] });
-  };
-
-  const navigateTo = (destination: NavigationLabel) => {
-    if (destination === 'Perfil') return;
-
-    if (onNavigate) {
-      onNavigate(destination);
-      return;
-    }
-
-    setNotice({
-      title: destination,
-      description:
-        'Conecte esta opção ao Expo Router para abrir a tela correspondente.',
-    });
   };
 
   return (
@@ -342,45 +280,7 @@ export function ProfileScreen({
             ) : null}
           </View>
         </ScrollView>
-
-        <SafeAreaView edges={['bottom']} style={styles.bottomBar}>
-          <View style={styles.navigation}>
-            {navigation.map((item) => {
-              const isActive = item.label === 'Perfil';
-              return (
-                <Pressable
-                  key={item.label}
-                  accessibilityRole="button"
-                  accessibilityLabel={item.label}
-                  accessibilityState={{ selected: isActive }}
-                  onPress={() => navigateToScreen(item.label)}
-                  style={styles.navItem}
-                >
-                  <View
-                    style={[
-                      styles.navIcon,
-                      isActive && styles.activeNavIcon,
-                    ]}
-                  >
-                    <Icon
-                      name={item.icon}
-                      size={25}
-                      color={isActive ? colors.navy : '#9299ad'}
-                    />
-                  </View>
-                  <Text
-                    style={[
-                      styles.navLabel,
-                      isActive && styles.activeNavLabel,
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </SafeAreaView>
+        {/* A barra inferior agora é renderizada pelo layout src/app/(tabs)/_layout.tsx. */}
       </View>
 
       <Modal
@@ -535,13 +435,6 @@ const styles = StyleSheet.create({
   groupSpacing: { height: 17 },
   emptyText: { color: colors.muted, fontSize: 12, lineHeight: 18, paddingVertical: 12 },
   pressed: { opacity: 0.65 },
-  bottomBar: { backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.line },
-  navigation: { flexDirection: 'row', paddingTop: 5, paddingBottom: 4, paddingHorizontal: 7 },
-  navItem: { flex: 1, alignItems: 'center', gap: 3, minHeight: 48 },
-  navIcon: { width: 38, height: 30, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
-  activeNavIcon: { backgroundColor: '#cde62f' },
-  navLabel: { fontSize: 8, color: colors.muted, fontWeight: '600' },
-  activeNavLabel: { color: colors.ink, fontWeight: '800' },
   modalBackdrop: { flex: 1, backgroundColor: '#10142a70', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalCard: { width: '100%', maxWidth: 360, backgroundColor: colors.white, borderRadius: 20, padding: 22, gap: 15 },
   modalTitle: { color: colors.ink, fontSize: 16, fontWeight: '800' },
