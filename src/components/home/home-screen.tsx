@@ -1,21 +1,10 @@
 import Feather from "@expo/vector-icons/Feather";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import {
-  useRef,
-  useState,
-  type ComponentProps,
-  type PropsWithChildren,
-} from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+
 
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -23,6 +12,8 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { services, type Service } from "@/data/services";
 import { openServiceLink } from "@/utils/open-service-link";
 import { ServiceCard } from "../services/service-card";
+
+import { useRef, useState, type ComponentProps, type PropsWithChildren, } from "react";
 
 const colors = {
   ink: "#171a2c",
@@ -329,6 +320,8 @@ export function HomeScreen() {
       explain(["Início", "Serviços", "Agenda", "Mensagens", "Perfil"][index]);
   };
 
+  const router = useRouter();
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View style={styles.shell}>
@@ -501,7 +494,19 @@ export function HomeScreen() {
           </Section>
         </ScrollView>
 
-        <BottomNav activeIndex={0} onSelect={onNavigate} />
+        {/* Fora do ScrollView: a barra permanece visível enquanto o conteúdo rola. */}
+        <SafeAreaView edges={['bottom']} style={styles.bottomBar}>
+          <View style={styles.navigation}>{navigation.map((item, index) => <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label} accessibilityState={{ selected: index === 0 }} onPress={() => {
+            if (index === 0) scrollRef.current?.scrollTo({ y: 0, animated: true });
+            else if (index === 1) goToServices();
+            else if (index === 2) scrollRef.current?.scrollTo({ y: agendaY.current, animated: true });
+            else if (index === 4) router.push('/profile');
+            else explain(item.label);
+          }} style={styles.navItem}>
+            <View style={[styles.navIcon, index === 0 && styles.activeNavIcon]}><Icon name={item.icon} size={25} color={index === 0 ? colors.navy : '#9699a3'} /></View>
+            <Text style={[styles.navLabel, index === 0 && styles.activeNavLabel]}>{item.label}</Text>
+          </Pressable>)}</View>
+        </SafeAreaView>
       </View>
 
       <Modal
