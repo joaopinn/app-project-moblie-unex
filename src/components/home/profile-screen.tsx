@@ -11,10 +11,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 
 type IconName = ComponentProps<typeof Feather>['name'];
-type NavigationLabel = 'Início' | 'Serviços' | 'Agenda' | 'Mensagens' | 'Perfil';
 type ProfileAction =
   | 'Portal acadêmico'
   | 'Documentos'
@@ -24,8 +22,6 @@ type ProfileAction =
 type Notice = { title: string; description: string };
 
 type ProfileScreenProps = {
-  /** Conecte ao Expo Router ou ao sistema de navegação usado pelo aplicativo. */
-  onNavigate?: (destination: NavigationLabel) => void;
   /** Opcional: permite abrir a tela real de cada item do perfil. */
   onOpenAction?: (action: ProfileAction) => void;
 };
@@ -40,14 +36,6 @@ const colors = {
   white: '#ffffff',
   background: '#fbfbfc',
 };
-
-const navigation: { label: NavigationLabel; icon: IconName }[] = [
-  { label: 'Início', icon: 'home' },
-  { label: 'Serviços', icon: 'grid' },
-  { label: 'Agenda', icon: 'calendar' },
-  { label: 'Mensagens', icon: 'mail' },
-  { label: 'Perfil', icon: 'user' },
-];
 
 const profileGroups: {
   heading: string;
@@ -107,44 +95,9 @@ function Icon({
   return <Feather name={name} size={size} color={color} />;
 }
 
-export function ProfileScreen({
-  onNavigate,
-  onOpenAction,
-}: ProfileScreenProps = {}) {
+export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
   const [query, setQuery] = useState('');
   const [notice, setNotice] = useState<Notice | null>(null);
-
-  const router = useRouter();
-
-    const navigateToScreen = (label: string) => {
-    switch (label) {
-        case 'Início':
-        router.push('/');
-        break;
-
-        case 'Serviços':
-        setNotice({
-            title: label,
-            description: 'Esta funcionalidade ainda está em desenvolvimento.',
-        });
-
-        case 'Perfil':
-        break;  
-
-        case 'Agenda':
-        setNotice({
-            title: label,
-            description: 'Esta funcionalidade ainda está em desenvolvimento.',
-        });
-
-        case 'Mensagens':
-        setNotice({
-            title: label,
-            description: 'Esta funcionalidade ainda está em desenvolvimento.',
-        });
-        break;
-    }
-    };
 
   const visibleGroups = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
