@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Message } from '../../data/messagesMock';
 
 interface MessageCardProps {
@@ -10,7 +10,10 @@ export function MessageCard({ message }: MessageCardProps) {
   const isUnread = message.unreadCount > 0;
 
   return (
-    <View style={[styles.card, isUnread && styles.unreadCard]}>
+    <TouchableOpacity 
+      activeOpacity={0.7} 
+      style={[styles.card, isUnread && styles.unreadCard]}
+    >
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{message.initials}</Text>
       </View>
@@ -37,7 +40,7 @@ export function MessageCard({ message }: MessageCardProps) {
           <Text style={styles.badgeText}>{message.unreadCount}</Text>
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 }
 
