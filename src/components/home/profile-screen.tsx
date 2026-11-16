@@ -1,7 +1,9 @@
 import Feather from '@expo/vector-icons/Feather';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter, type Href } from 'expo-router';
 import { useMemo, useState, type ComponentProps } from 'react';
 import {
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -19,17 +21,24 @@ type ProfileAction =
   | 'Notificações'
   | 'Privacidade'
   | 'Ajuda e atendimento';
-type Notice = { title: string; description: string };
 
 type ProfileScreenProps = {
-  /** Opcional: permite abrir a tela real de cada item do perfil. */
+  /** Opcional: sobrescreve a navegação padrão caso queira interceptar externamente. */
   onOpenAction?: (action: ProfileAction) => void;
+};
+
+const ACADEMIC_PORTAL_URL = 'https://aluno.unex.edu.br/#/login';
+
+const SUBSCREEN_ROUTES: Record<Exclude<ProfileAction, 'Portal acadêmico'>, Href> = {
+  Documentos: '/perfil/documentos' as Href,
+  Notificações: '/perfil/notificacoes' as Href,
+  Privacidade: '/perfil/privacidade' as Href,
+  'Ajuda e atendimento': '/perfil/ajuda' as Href,
 };
 
 const colors = {
   ink: '#171a2c',
   muted: '#818697',
-  subtle: '#a0a5b3',
   line: '#e7eaf1',
   navy: '#151936',
   lime: '#d5ec63',
@@ -96,8 +105,9 @@ function Icon({
 }
 
 export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
+  const router = useRouter();
   const [query, setQuery] = useState('');
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [portalError, setPortalError] = useState<string | null>(null);
 
   const visibleGroups = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
@@ -115,26 +125,31 @@ export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
       .filter((group) => group.items.length > 0);
   }, [query]);
 
-  const openAction = (action: ProfileAction) => {
+  const openAcademicPortal = async () => {
+    try {
+      const supported = await Linking.canOpenURL(ACADEMIC_PORTAL_URL);
+      if (!supported) {
+        setPortalError(`Não foi possível abrir o endereço ${ACADEMIC_PORTAL_URL}.`);
+        return;
+      }
+      await Linking.openURL(ACADEMIC_PORTAL_URL);
+    } catch {
+      setPortalError('Verifique sua conexão com a internet e tente novamente.');
+    }
+  };
+
+  const handleOpenAction = async (action: ProfileAction) => {
     if (onOpenAction) {
       onOpenAction(action);
       return;
     }
 
-    const descriptions: Record<ProfileAction, string> = {
-      'Portal acadêmico':
-        'O acesso ao portal acadêmico oficial será conectado aqui. Nenhuma página externa foi configurada neste protótipo.',
-      Documentos:
-        'As consultas e solicitações de documentos acadêmicos serão conectadas quando os destinos oficiais estiverem definidos.',
-      Notificações:
-        'As preferências de notificações poderão ser configuradas aqui quando essa funcionalidade estiver implementada.',
-      Privacidade:
-        'As opções de privacidade e gerenciamento de dados serão exibidas aqui quando a funcionalidade estiver implementada.',
-      'Ajuda e atendimento':
-        'Os canais oficiais de suporte serão conectados aqui quando os contatos da instituição forem definidos.',
-    };
+    if (action === 'Portal acadêmico') {
+      await openAcademicPortal();
+      return;
+    }
 
-    setNotice({ title: action, description: descriptions[action] });
+    router.push(SUBSCREEN_ROUTES[action]);
   };
 
   return (
@@ -153,13 +168,7 @@ export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
               accessibilityRole="button"
               accessibilityLabel="Ver notificações"
               hitSlop={8}
-              onPress={() =>
-                setNotice({
-                  title: 'Notificações',
-                  description:
-                    'Os comunicados e avisos institucionais serão exibidos aqui quando a integração estiver disponível.',
-                })
-              }
+              onPress={() => router.push(SUBSCREEN_ROUTES['Notificações'])}
               style={styles.bell}
             >
               <Icon name="bell" color="#596078" size={22} />
@@ -244,8 +253,10 @@ export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
                 {group.items.map((item, itemIndex) => (
                   <View key={item.title}>
                     <Pressable
-                      accessibilityRole="button"
-                      onPress={() => openAction(item.title)}
+                      accessibilityRole={
+                        item.title === 'Portal acadêmico' ? 'link' : 'button'
+                      }
+                      onPress={() => void handleOpenAction(item.title)}
                       style={({ pressed }) => [
                         styles.optionRow,
                         pressed && styles.pressed,
@@ -260,7 +271,15 @@ export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
                           {item.description}
                         </Text>
                       </View>
-                      <Icon name="chevron-right" color="#252b41" size={20} />
+                      <Icon
+                        name={
+                          item.title === 'Portal acadêmico'
+                            ? 'external-link'
+                            : 'chevron-right'
+                        }
+                        color="#252b41"
+                        size={20}
+                      />
                     </Pressable>
                     {itemIndex < group.items.length - 1 ? (
                       <View style={styles.rowDivider} />
@@ -280,62 +299,23 @@ export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
             ) : null}
           </View>
         </ScrollView>
-
-        <SafeAreaView edges={['bottom']} style={styles.bottomBar}>
-          <View style={styles.navigation}>
-            {navigation.map((item) => {
-              const isActive = item.label === 'Perfil';
-              return (
-                <Pressable
-                  key={item.label}
-                  accessibilityRole="button"
-                  accessibilityLabel={item.label}
-                  accessibilityState={{ selected: isActive }}
-                  onPress={() => navigateToScreen(item.label)}
-                  style={styles.navItem}
-                >
-                  <View
-                    style={[
-                      styles.navIcon,
-                      isActive && styles.activeNavIcon,
-                    ]}
-                  >
-                    <Icon
-                      name={item.icon}
-                      size={27}
-                      color={isActive ? colors.navy : '#9299ad'}
-                    />
-                  </View>
-                  <Text
-                    style={[
-                      styles.navLabel,
-                      isActive && styles.activeNavLabel,
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </SafeAreaView>
       </View>
 
       <Modal
-        visible={notice !== null}
+        visible={portalError !== null}
         transparent
         animationType="fade"
-        onRequestClose={() => setNotice(null)}
+        onRequestClose={() => setPortalError(null)}
       >
         <View style={styles.modalBackdrop}>
           <View accessibilityViewIsModal style={styles.modalCard}>
             <Text accessibilityRole="header" style={styles.modalTitle}>
-              {notice?.title}
+              Não foi possível abrir o portal
             </Text>
-            <Text style={styles.modalDescription}>{notice?.description}</Text>
+            <Text style={styles.modalDescription}>{portalError}</Text>
             <Pressable
               accessibilityRole="button"
-              onPress={() => setNotice(null)}
+              onPress={() => setPortalError(null)}
               style={({ pressed }) => [styles.modalButton, pressed && styles.pressed]}
             >
               <Text style={styles.modalButtonLabel}>Entendi</Text>
@@ -369,7 +349,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 18,
-    paddingHorizontal: 0,
   },
   logo: {
     color: colors.navy,
@@ -410,8 +389,8 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   scroll: { flex: 1 },
-  content: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 30, gap: 22 },
-  pageHeading: { paddingHorizontal: 0, gap: 6, marginBottom: 0 },
+  content: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 96, gap: 22 },
+  pageHeading: { gap: 6 },
   eyebrow: {
     fontSize: 9,
     lineHeight: 12,
@@ -434,7 +413,12 @@ const styles = StyleSheet.create({
   studentIdBlock: { alignItems: 'flex-end', minWidth: 64, gap: 5 },
   fieldLabel: { color: '#a0a7c0', fontSize: 10, lineHeight: 13 },
   studentId: { color: colors.white, fontSize: 11, fontWeight: '700' },
-  studentBottomRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 },
+  studentBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
   unitBlock: { flex: 1, gap: 5 },
   unitValue: { color: colors.white, fontSize: 10, lineHeight: 15, fontWeight: '600' },
   statusBlock: { alignItems: 'flex-end', gap: 5 },
@@ -457,7 +441,15 @@ const styles = StyleSheet.create({
     marginBottom: 9,
     marginTop: 1,
   },
-  optionRow: { flexDirection: 'row', alignItems: 'center', minHeight: 78, gap: 14, paddingVertical: 12, paddingHorizontal: 1, borderRadius: 9 },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 78,
+    gap: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 1,
+    borderRadius: 9,
+  },
   optionIconTile: {
     width: 42,
     height: 42,
@@ -473,17 +465,30 @@ const styles = StyleSheet.create({
   groupSpacing: { height: 22 },
   emptyText: { color: colors.muted, fontSize: 12, lineHeight: 18, paddingVertical: 12 },
   pressed: { opacity: 0.65 },
-  bottomBar: { backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.line },
-  navigation: { flexDirection: 'row', paddingTop: 8, paddingBottom: 9, paddingHorizontal: 8 },
-  navItem: { flex: 1, alignItems: 'center', gap: 6, minHeight: 62 },
-  navIcon: { width: 48, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
-  activeNavIcon: { backgroundColor: '#cde62f' },
-  navLabel: { fontSize: 10, color: colors.muted, fontWeight: '600' },
-  activeNavLabel: { color: colors.ink, fontWeight: '800' },
-  modalBackdrop: { flex: 1, backgroundColor: '#10142a70', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  modalCard: { width: '100%', maxWidth: 360, backgroundColor: colors.white, borderRadius: 22, padding: 24, gap: 18 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: '#10142a70',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: colors.white,
+    borderRadius: 22,
+    padding: 24,
+    gap: 18,
+  },
   modalTitle: { color: colors.ink, fontSize: 18, fontWeight: '800' },
   modalDescription: { color: colors.muted, fontSize: 14, lineHeight: 21 },
-  modalButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.lime, paddingHorizontal: 18 },
+  modalButton: {
+    minHeight: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 13,
+    backgroundColor: colors.lime,
+    paddingHorizontal: 18,
+  },
   modalButtonLabel: { color: colors.navy, fontSize: 13, fontWeight: '800' },
 });
