@@ -6,7 +6,7 @@ import { colors } from "@/constants/nexa-theme";
 
 // Nome do arquivo de rota dentro de src/app/(tabs)/. Itens sem rota ainda não
 // têm tela implementada (ex.: Mensagens).
-export type TabRoute = "index" | "servicos" | "agenda" | "perfil";
+export type TabRoute = "index" | "servicos" | "agenda" | "perfil" | "courses";
 
 export type NavigationItem = { label: string; icon: IconName; route?: TabRoute };
 

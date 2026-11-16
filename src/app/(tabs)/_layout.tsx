@@ -10,6 +10,14 @@ import { BottomNav, type NavigationItem } from '@/components/layout/bottom-nav';
 function NexaTabBar({ state, navigation }: BottomTabBarProps) {
   const focused = state.routes[state.index];
 
+  // Se por acaso a tela focada atual for "courses" (ou se você quiser mapear outras telas filhas),
+  // tratamos para que a aba visual ativa seja "servicos".
+  // Nota: Como 'courses' está na raiz, podemos checar o nome ou usar o hook usePathname se preferir,
+  // mas aqui podemos inspecionar o estado ou passar uma lógica limpa.
+  
+  // Vamos usar uma verificação inteligente baseada no nome da rota focada:
+  const activeRouteName = focused.name === 'courses' ? 'servicos' : focused.name;
+
   const onSelect = (item: NavigationItem) => {
     if (!item.route) {
       Alert.alert(item.label, 'Esta tela ainda será desenvolvida.');
@@ -30,7 +38,8 @@ function NexaTabBar({ state, navigation }: BottomTabBarProps) {
     }
   };
 
-  return <BottomNav activeRoute={focused.name} onSelect={onSelect} />;
+  // Passamos o activeRouteName ajustado para o BottomNav
+  return <BottomNav activeRoute={activeRouteName} onSelect={onSelect} />;
 }
 
 export default function TabsLayout() {
