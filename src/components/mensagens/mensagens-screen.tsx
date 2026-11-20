@@ -1,3 +1,5 @@
+import { router, useLocalSearchParams } from 'expo-router';
+import { Conversation } from './conversation';
 import { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { AppHeader } from '../layout/app-header';
@@ -7,6 +9,10 @@ import { Message, MOCK_MESSAGES } from '../../data/messagesMock';
 
 export function MensagensScreen() {
   const [searchText, setSearchText] = useState('');
+
+  const { conversa } = useLocalSearchParams<{ conversa?: string }>();
+  const selected = MOCK_MESSAGES.find(item => item.id === conversa);
+  const [replies, setReplies] = useState<Record<string, string[]>>({});
 
   const filteredMessages = useMemo(() => {
     if (!searchText.trim()) return MOCK_MESSAGES;
@@ -20,23 +26,26 @@ export function MensagensScreen() {
   }, [searchText]);
 
   const renderItem = ({ item }: { item: Message }) => (
-    <MessageCard message={item} />
+    <MessageCard message={item} onPress={() => router.replace({ pathname: '/mensagens', params: { conversa: item.id } })} />
   );
 
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>
-        Nenhuma mensagem encontrada para "{searchText}".
+        Nenhuma mensagem encontrada para “{searchText}”.
       </Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
+      {selected && <Conversation key={selected.id} message={selected} replies={replies[selected.id] ?? []}
+        onClose={() => router.replace('/mensagens')}
+        onSend={text => setReplies(previous => ({ ...previous, [selected.id]: [...(previous[selected.id] ?? []), text] }))} />}
       <AppHeader 
-        query="" 
-        onChangeQuery={() => {}} 
-        onBellPress={() => {}} 
+        query={searchText}
+        onChangeQuery={setSearchText}
+        onBellPress={() => router.push('/perfil/notificacoes')}
       />
 
       <View style={styles.content}>

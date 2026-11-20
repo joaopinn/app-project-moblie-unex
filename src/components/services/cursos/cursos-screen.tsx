@@ -9,14 +9,16 @@ import {
   SafeAreaView 
 } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppHeader } from '@/components/layout/app-header';
 import { coursesData, Course } from '@/data/courses';
 import { colors } from '@/constants/nexa-theme'; // Importe as cores do tema padrão
 
 export default function CoursesRoute() { // Export default obrigatório para a rota
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
+  const { busca } = useLocalSearchParams<{ busca?: string }>();
+  const searchQuery = busca ?? '';
+  const setSearchQuery = (value: string) => router.replace({ pathname: '/courses', params: { busca: value } });
   const [selectedSemester, setSelectedSemester] = useState('Todos semestres');
 
   const filteredCourses = coursesData.filter(course => 
@@ -40,7 +42,7 @@ export default function CoursesRoute() { // Export default obrigatório para a r
             Instrutor(a): <Text style={styles.instructorName}>{item.instructor}</Text>
           </Text>
 
-          <TouchableOpacity style={styles.accessButton}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Acessar ${item.title}`} onPress={() => router.push({ pathname: "/disciplina", params: { id: item.id } })} style={styles.accessButton}>
             <Text style={styles.accessButtonText}>Acessar</Text>
             <Feather name="external-link" size={14} color="#3B4E68" style={{ marginLeft: 4 }} />
           </TouchableOpacity>
@@ -53,9 +55,9 @@ export default function CoursesRoute() { // Export default obrigatório para a r
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.shell}>
         <AppHeader 
-          query="" 
-          onChangeQuery={() => {}} 
-          onBellPress={() => {}} 
+          query={searchQuery}
+          onChangeQuery={setSearchQuery}
+          onBellPress={() => router.push('/perfil/notificacoes')}
         />
 
         <View style={styles.content}>
@@ -70,7 +72,7 @@ export default function CoursesRoute() { // Export default obrigatório para a r
           {/* Cabeçalho da Seção e Seletor de Semestres */}
           <View style={styles.headerRow}>
             <Text style={styles.screenTitle}>Cursos</Text>
-            <TouchableOpacity style={styles.semesterSelector}>
+            <TouchableOpacity style={styles.semesterSelector} onPress={() => setSelectedSemester(value => value === "Todos semestres" ? "2026.2" : "Todos semestres")}>
               <Feather name="grid" size={14} color="#64748B" style={{ marginRight: 6 }} />
               <Text style={styles.semesterText}>{selectedSemester}</Text>
               <Feather name="chevron-down" size={14} color="#64748B" style={{ marginLeft: 6 }} />
