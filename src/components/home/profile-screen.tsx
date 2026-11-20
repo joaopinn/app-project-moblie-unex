@@ -1,7 +1,9 @@
 import Feather from '@expo/vector-icons/Feather';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter, type Href } from 'expo-router';
 import { useMemo, useState, type ComponentProps } from 'react';
 import {
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -19,17 +21,24 @@ type ProfileAction =
   | 'Notificações'
   | 'Privacidade'
   | 'Ajuda e atendimento';
-type Notice = { title: string; description: string };
 
 type ProfileScreenProps = {
-  /** Opcional: permite abrir a tela real de cada item do perfil. */
+  /** Opcional: sobrescreve a navegação padrão caso queira interceptar externamente. */
   onOpenAction?: (action: ProfileAction) => void;
+};
+
+const ACADEMIC_PORTAL_URL = 'https://aluno.unex.edu.br/#/login';
+
+const SUBSCREEN_ROUTES: Record<Exclude<ProfileAction, 'Portal acadêmico'>, Href> = {
+  Documentos: '/perfil/documentos' as Href,
+  Notificações: '/perfil/notificacoes' as Href,
+  Privacidade: '/perfil/privacidade' as Href,
+  'Ajuda e atendimento': '/perfil/ajuda' as Href,
 };
 
 const colors = {
   ink: '#171a2c',
   muted: '#818697',
-  subtle: '#a0a5b3',
   line: '#e7eaf1',
   navy: '#151936',
   lime: '#d5ec63',
@@ -96,8 +105,9 @@ function Icon({
 }
 
 export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
+  const router = useRouter();
   const [query, setQuery] = useState('');
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [portalError, setPortalError] = useState<string | null>(null);
 
   const visibleGroups = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
@@ -115,26 +125,31 @@ export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
       .filter((group) => group.items.length > 0);
   }, [query]);
 
-  const openAction = (action: ProfileAction) => {
+  const openAcademicPortal = async () => {
+    try {
+      const supported = await Linking.canOpenURL(ACADEMIC_PORTAL_URL);
+      if (!supported) {
+        setPortalError(`Não foi possível abrir o endereço ${ACADEMIC_PORTAL_URL}.`);
+        return;
+      }
+      await Linking.openURL(ACADEMIC_PORTAL_URL);
+    } catch {
+      setPortalError('Verifique sua conexão com a internet e tente novamente.');
+    }
+  };
+
+  const handleOpenAction = async (action: ProfileAction) => {
     if (onOpenAction) {
       onOpenAction(action);
       return;
     }
 
-    const descriptions: Record<ProfileAction, string> = {
-      'Portal acadêmico':
-        'O acesso ao portal acadêmico oficial será conectado aqui. Nenhuma página externa foi configurada neste protótipo.',
-      Documentos:
-        'As consultas e solicitações de documentos acadêmicos serão conectadas quando os destinos oficiais estiverem definidos.',
-      Notificações:
-        'As preferências de notificações poderão ser configuradas aqui quando essa funcionalidade estiver implementada.',
-      Privacidade:
-        'As opções de privacidade e gerenciamento de dados serão exibidas aqui quando a funcionalidade estiver implementada.',
-      'Ajuda e atendimento':
-        'Os canais oficiais de suporte serão conectados aqui quando os contatos da instituição forem definidos.',
-    };
+    if (action === 'Portal acadêmico') {
+      await openAcademicPortal();
+      return;
+    }
 
-    setNotice({ title: action, description: descriptions[action] });
+    router.push(SUBSCREEN_ROUTES[action]);
   };
 
   return (
@@ -153,22 +168,16 @@ export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
               accessibilityRole="button"
               accessibilityLabel="Ver notificações"
               hitSlop={8}
-              onPress={() =>
-                setNotice({
-                  title: 'Notificações',
-                  description:
-                    'Os comunicados e avisos institucionais serão exibidos aqui quando a integração estiver disponível.',
-                })
-              }
+              onPress={() => router.push(SUBSCREEN_ROUTES['Notificações'])}
               style={styles.bell}
             >
-              <Icon name="bell" color="#596078" size={20} />
+              <Icon name="bell" color="#596078" size={22} />
               <View style={styles.notificationDot} />
             </Pressable>
           </View>
 
           <View style={styles.searchBox}>
-            <Icon name="search" size={18} color="#858995" />
+            <Icon name="search" size={20} color="#858995" />
             <TextInput
               accessibilityLabel="Buscar opções do perfil"
               placeholder="Busque cursos, serviços, notícias ou eventos..."
@@ -244,15 +253,17 @@ export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
                 {group.items.map((item, itemIndex) => (
                   <View key={item.title}>
                     <Pressable
-                      accessibilityRole="button"
-                      onPress={() => openAction(item.title)}
+                      accessibilityRole={
+                        item.title === 'Portal acadêmico' ? 'link' : 'button'
+                      }
+                      onPress={() => void handleOpenAction(item.title)}
                       style={({ pressed }) => [
                         styles.optionRow,
                         pressed && styles.pressed,
                       ]}
                     >
                       <View style={styles.optionIconTile}>
-                        <Icon name={item.icon} color="#65708d" size={18} />
+                        <Icon name={item.icon} color="#65708d" size={20} />
                       </View>
                       <View style={styles.optionCopy}>
                         <Text style={styles.optionTitle}>{item.title}</Text>
@@ -260,7 +271,15 @@ export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
                           {item.description}
                         </Text>
                       </View>
-                      <Icon name="chevron-right" color="#252b41" size={17} />
+                      <Icon
+                        name={
+                          item.title === 'Portal acadêmico'
+                            ? 'external-link'
+                            : 'chevron-right'
+                        }
+                        color="#252b41"
+                        size={20}
+                      />
                     </Pressable>
                     {itemIndex < group.items.length - 1 ? (
                       <View style={styles.rowDivider} />
@@ -280,24 +299,23 @@ export function ProfileScreen({ onOpenAction }: ProfileScreenProps = {}) {
             ) : null}
           </View>
         </ScrollView>
-        {/* A barra inferior agora é renderizada pelo layout src/app/(tabs)/_layout.tsx. */}
       </View>
 
       <Modal
-        visible={notice !== null}
+        visible={portalError !== null}
         transparent
         animationType="fade"
-        onRequestClose={() => setNotice(null)}
+        onRequestClose={() => setPortalError(null)}
       >
         <View style={styles.modalBackdrop}>
           <View accessibilityViewIsModal style={styles.modalCard}>
             <Text accessibilityRole="header" style={styles.modalTitle}>
-              {notice?.title}
+              Não foi possível abrir o portal
             </Text>
-            <Text style={styles.modalDescription}>{notice?.description}</Text>
+            <Text style={styles.modalDescription}>{portalError}</Text>
             <Pressable
               accessibilityRole="button"
-              onPress={() => setNotice(null)}
+              onPress={() => setPortalError(null)}
               style={({ pressed }) => [styles.modalButton, pressed && styles.pressed]}
             >
               <Text style={styles.modalButtonLabel}>Entendi</Text>
@@ -320,9 +338,9 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: colors.white,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 10,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f1f5',
   },
@@ -330,26 +348,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 15,
-    paddingHorizontal: 5,
+    marginBottom: 18,
   },
   logo: {
     color: colors.navy,
-    fontSize: 27,
-    lineHeight: 29,
+    fontSize: 32,
+    lineHeight: 34,
     fontWeight: '900',
     letterSpacing: -2,
   },
   logoAccent: { color: '#a5bf38' },
-  byline: { fontSize: 8, color: colors.muted, marginTop: -1 },
-  bell: { padding: 7 },
+  byline: { fontSize: 11, color: colors.muted, marginTop: -2 },
+  bell: { padding: 11 },
   notificationDot: {
     position: 'absolute',
-    right: 7,
-    top: 5,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    right: 9,
+    top: 7,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
     backgroundColor: '#b5d83e',
     borderWidth: 1,
     borderColor: colors.white,
@@ -357,88 +374,121 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
-    paddingHorizontal: 13,
-    minHeight: 42,
-    borderRadius: 14,
+    gap: 12,
+    paddingHorizontal: 14,
+    minHeight: 50,
+    borderRadius: 16,
     backgroundColor: colors.white,
     boxShadow: '0px 5px 18px rgba(25, 30, 50, 0.07)',
   },
   searchInput: {
     flex: 1,
     minWidth: 0,
-    paddingVertical: 10,
-    fontSize: 10,
+    paddingVertical: 12,
+    fontSize: 12,
     color: colors.ink,
   },
   scroll: { flex: 1 },
-  content: { paddingHorizontal: 18, paddingTop: 20, paddingBottom: 24, gap: 16 },
-  pageHeading: { paddingHorizontal: 3, gap: 8, marginBottom: 0 },
+  content: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 96, gap: 22 },
+  pageHeading: { gap: 6 },
   eyebrow: {
-    fontSize: 8,
-    lineHeight: 11,
+    fontSize: 9,
+    lineHeight: 12,
     letterSpacing: 1.2,
     color: '#858da6',
     fontWeight: '800',
   },
   pageTitle: {
     color: colors.ink,
-    fontSize: 24,
-    lineHeight: 29,
+    fontSize: 28,
+    lineHeight: 34,
     fontWeight: '800',
     letterSpacing: -0.8,
   },
-  studentCard: { borderRadius: 15, paddingHorizontal: 14, paddingVertical: 13, gap: 13 },
-  studentTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  studentNameBlock: { flex: 1, minWidth: 0, gap: 3 },
-  studentName: { color: colors.white, fontSize: 10, lineHeight: 13, fontWeight: '700' },
-  studentCourse: { color: '#c4c9da', fontSize: 7.5, lineHeight: 10 },
-  studentIdBlock: { alignItems: 'flex-end', minWidth: 57, gap: 4 },
-  fieldLabel: { color: '#a0a7c0', fontSize: 7.5, lineHeight: 10 },
-  studentId: { color: colors.white, fontSize: 8, fontWeight: '700' },
-  studentBottomRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 },
-  unitBlock: { flex: 1, gap: 4 },
-  unitValue: { color: colors.white, fontSize: 7.5, fontWeight: '600' },
-  statusBlock: { alignItems: 'flex-end', gap: 4 },
-  statusValue: { color: colors.lime, fontSize: 8, fontWeight: '700' },
+  studentCard: { borderRadius: 22, paddingHorizontal: 22, paddingVertical: 20, gap: 18 },
+  studentTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  studentNameBlock: { flex: 1, minWidth: 0, gap: 5 },
+  studentName: { color: colors.white, fontSize: 17, lineHeight: 22, fontWeight: '700' },
+  studentCourse: { color: '#c4c9da', fontSize: 10, lineHeight: 15 },
+  studentIdBlock: { alignItems: 'flex-end', minWidth: 64, gap: 5 },
+  fieldLabel: { color: '#a0a7c0', fontSize: 10, lineHeight: 13 },
+  studentId: { color: colors.white, fontSize: 11, fontWeight: '700' },
+  studentBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  unitBlock: { flex: 1, gap: 5 },
+  unitValue: { color: colors.white, fontSize: 10, lineHeight: 15, fontWeight: '600' },
+  statusBlock: { alignItems: 'flex-end', gap: 5 },
+  statusValue: { color: colors.lime, fontSize: 11, fontWeight: '700' },
   optionsCard: {
     backgroundColor: colors.white,
-    borderRadius: 20,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.line,
-    paddingHorizontal: 15,
-    paddingTop: 17,
-    paddingBottom: 13,
+    paddingHorizontal: 22,
+    paddingTop: 22,
+    paddingBottom: 18,
   },
   group: { gap: 0 },
   groupHeading: {
     color: '#929ab1',
-    fontSize: 7.5,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1,
-    marginBottom: 6,
+    marginBottom: 9,
     marginTop: 1,
   },
-  optionRow: { flexDirection: 'row', alignItems: 'center', minHeight: 58, gap: 10, paddingVertical: 8, paddingHorizontal: 1, borderRadius: 8 },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 78,
+    gap: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 1,
+    borderRadius: 9,
+  },
   optionIconTile: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f0f2f7',
   },
-  optionCopy: { flex: 1, minWidth: 0, gap: 4 },
-  optionTitle: { color: colors.ink, fontSize: 9, lineHeight: 12, fontWeight: '700' },
-  optionDescription: { color: '#959bad', fontSize: 7.5, lineHeight: 11 },
+  optionCopy: { flex: 1, minWidth: 0, gap: 5 },
+  optionTitle: { color: colors.ink, fontSize: 13, lineHeight: 18, fontWeight: '700' },
+  optionDescription: { color: '#959bad', fontSize: 10, lineHeight: 15 },
   rowDivider: { height: 1, backgroundColor: '#e4e6ec', marginLeft: 0, marginRight: 1 },
-  groupSpacing: { height: 17 },
+  groupSpacing: { height: 22 },
   emptyText: { color: colors.muted, fontSize: 12, lineHeight: 18, paddingVertical: 12 },
   pressed: { opacity: 0.65 },
-  modalBackdrop: { flex: 1, backgroundColor: '#10142a70', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  modalCard: { width: '100%', maxWidth: 360, backgroundColor: colors.white, borderRadius: 20, padding: 22, gap: 15 },
-  modalTitle: { color: colors.ink, fontSize: 16, fontWeight: '800' },
-  modalDescription: { color: colors.muted, fontSize: 13, lineHeight: 20 },
-  modalButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.lime, paddingHorizontal: 16 },
-  modalButtonLabel: { color: colors.navy, fontSize: 12, fontWeight: '800' },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: '#10142a70',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: colors.white,
+    borderRadius: 22,
+    padding: 24,
+    gap: 18,
+  },
+  modalTitle: { color: colors.ink, fontSize: 18, fontWeight: '800' },
+  modalDescription: { color: colors.muted, fontSize: 14, lineHeight: 21 },
+  modalButton: {
+    minHeight: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 13,
+    backgroundColor: colors.lime,
+    paddingHorizontal: 18,
+  },
+  modalButtonLabel: { color: colors.navy, fontSize: 13, fontWeight: '800' },
 });

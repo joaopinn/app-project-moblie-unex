@@ -5,8 +5,15 @@ import { Icon, type IconName } from "@/components/ui/nexa-icon";
 import { colors } from "@/constants/nexa-theme";
 
 // Nome do arquivo de rota dentro de src/app/(tabs)/. Itens sem rota ainda não
+
 // têm tela implementada.
-export type TabRoute = "index" | "servicos" | "agenda" | "mensagens" | "perfil";
+export type TabRoute =
+  | "index"
+  | "servicos"
+  | "agenda"
+  | "mensagens"
+  | "perfil"
+  | "courses";
 
 export type NavigationItem = { label: string; icon: IconName; route?: TabRoute };
 
