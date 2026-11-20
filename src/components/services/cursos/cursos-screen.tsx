@@ -18,7 +18,7 @@ export default function CoursesRoute() { // Export default obrigatório para a r
   const router = useRouter();
   const { busca } = useLocalSearchParams<{ busca?: string }>();
   const searchQuery = busca ?? '';
-  const setSearchQuery = (value: string) => router.setParams({ busca: value });
+  const setSearchQuery = (value: string) => router.replace({ pathname: '/courses', params: { busca: value } });
   const [selectedSemester, setSelectedSemester] = useState('Todos semestres');
 
   const filteredCourses = coursesData.filter(course => 

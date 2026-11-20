@@ -26,7 +26,7 @@ export function MensagensScreen() {
   }, [searchText]);
 
   const renderItem = ({ item }: { item: Message }) => (
-    <MessageCard message={item} onPress={() => router.setParams({ conversa: item.id })} />
+    <MessageCard message={item} onPress={() => router.replace({ pathname: '/mensagens', params: { conversa: item.id } })} />
   );
 
   const renderEmptyComponent = () => (
@@ -40,7 +40,7 @@ export function MensagensScreen() {
   return (
     <View style={styles.container}>
       {selected && <Conversation key={selected.id} message={selected} replies={replies[selected.id] ?? []}
-        onClose={() => router.setParams({ conversa: undefined })}
+        onClose={() => router.replace('/mensagens')}
         onSend={text => setReplies(previous => ({ ...previous, [selected.id]: [...(previous[selected.id] ?? []), text] }))} />}
       <AppHeader 
         query={searchText}
