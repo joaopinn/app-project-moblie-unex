@@ -15,7 +15,7 @@ export const MOCK_MESSAGES: Message[] = [
     sender: 'Elienaide Machado de Souza Silva',
     date: 'Ontem',
     subject: 'Desenvolvimento mobile híbrido',
-    preview: 'Boa tarde, Informe que por questão de saúde não vou dar aul...',
+    preview: 'Boa tarde, informo que por questão de saúde não vou dar aula hoje.',
     unreadCount: 1,
   },
   {
@@ -24,7 +24,7 @@ export const MOCK_MESSAGES: Message[] = [
     sender: 'Rafael Brasil dos Santos',
     date: '26/08/26',
     subject: 'Desenvolvimento mobile híbrido',
-    preview: 'Feira de Santana A professora Elienaide não poderá ministrar...',
+    preview: 'Feira de Santana. A professora Elienaide não poderá ministrar a aula.',
     unreadCount: 1,
   },
   {
@@ -33,7 +33,7 @@ export const MOCK_MESSAGES: Message[] = [
     sender: 'Rafael Brasil dos Santos',
     date: '31/07/26',
     subject: 'Desenvolvimento Web Orientada a Objetos',
-    preview: 'Prezados(as) estudantes, Informamos que, por motivo de for...',
+    preview: 'Prezados(as) estudantes, informamos que, por motivo de força maior, a aula será remarcada.',
     unreadCount: 0,
   },
 ];

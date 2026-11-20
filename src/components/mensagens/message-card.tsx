@@ -4,13 +4,16 @@ import { Message } from '../../data/messagesMock';
 
 interface MessageCardProps {
   message: Message;
+  onPress: () => void;
 }
 
-export function MessageCard({ message }: MessageCardProps) {
+export function MessageCard({ message, onPress }: MessageCardProps) {
   const isUnread = message.unreadCount > 0;
 
   return (
     <TouchableOpacity 
+      onPress={onPress}
+      accessibilityRole="button"
       activeOpacity={0.7} 
       style={[styles.card, isUnread && styles.unreadCard]}
     >
